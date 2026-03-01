@@ -46,10 +46,6 @@ export const useBluetooth = (serviceUuid, charUuid) => {
      raw: rawString
     };
 
-    // Logging for your Firebase transition
-    console.log(">>> Raw String:", rawString);
-    console.log(">>> Parsed HR:", parsedData.hr);
-
     onDataReceived(parsedData);
    });
 

@@ -61,6 +61,22 @@ const DataMonitor = () => {
 
   const isViewer = new URLSearchParams(window.location.search).get('role') === 'viewer';
 
+  useEffect(() => {
+  if (isViewer) {
+    const liveRef = ref(db, 'live/current');
+    
+    // This triggers every time the Owner (You) sends a Bluetooth pulse to Firebase
+    const unsubscribe = onValue(liveRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setHistory(prev => [...prev, data].slice(-50));
+      }
+    });
+
+    return () => unsubscribe();
+  }
+}, [isViewer]);
+
 const handleNewData = useCallback((newData) => {
     const dataPoint = {
         ...newData,
@@ -93,17 +109,6 @@ const handleNewData = useCallback((newData) => {
       return () => unsubscribe();
     }
   }, [isViewer]);
-
-  // const handleNewData = useCallback((newData) => {
-  //  console.log('Received Data:', newData); // Debug log to verify data structure
-  //   setHistory((prev) => {
-  //     const entry = { 
-  //       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }), 
-  //       ...newData 
-  //     };
-  //     return [...prev, entry].slice(-40); 
-  //   });
-  // }, []);
 
   return (
     <div className="mobile-app-wrapper">
@@ -182,7 +187,11 @@ const handleNewData = useCallback((newData) => {
       <header className="app-header">
         <div className="logo-area">
           <h1>Pectus Pro</h1>
-          <div className="status-pill">{isConnected ? '● STREAMING' : '○ OFFLINE'}</div>
+          <span className="status-pill">
+           {isViewer 
+             ? (history.length > 0 ? 'LIVE FROM CLOUD' : 'WAITING FOR DATA...') 
+             : (isConnected ? '● STREAMING' : '○ OFFLINE')}
+         </span>
         </div>
         {!isViewer && (
         <button className="btn-action" onClick={isConnected ? disconnect : () => connect(handleNewData)}>
