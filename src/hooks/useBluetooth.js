@@ -85,7 +85,8 @@ export const useBluetooth = () => {
      temp: parseValue(rawString, 'T'),
      pressure: parseValue(rawString, 'P'),
      magnetic: parseValue(rawString, 'B'),
-     hr: parseValue(rawString, 'HR')
+     hr: parseValue(rawString, 'HR'),
+     spo2: parseValue(rawString, 'SpO2')
     };
 
     // Send combined object to DataMonitor.jsx
