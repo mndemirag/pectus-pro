@@ -5,6 +5,7 @@ import {
 import { useBluetooth } from '../hooks/useBluetooth';
 import { db } from '../firebase';
 import { ref, set, onValue } from "firebase/database";
+import BatteryStatus from './BatteryStatus';
 
 const SERVICE_UUID = "4fafc201-1fb5-459e-8fcc-c5c9c331914b";
 const CHARACTERISTIC_UUID = "beb5483e-36e1-4688-b7f5-ea07361b26a8";
@@ -77,23 +78,21 @@ const DataMonitor = () => {
   }
 }, [isViewer]);
 
-const handleNewData = useCallback((newData) => {
-    const dataPoint = {
-        ...newData,
-        // Add a timestamp for the X-axis
-        time: new Date().toLocaleTimeString().split(' ')[0], 
-        timestamp: Date.now()
-    };
+const handleNewData = useCallback((incomingData) => {
+  const dataPoint = {
+    ...incomingData, // This already contains the stable 'battery' object from useBluetooth.js
+    time: new Date().toLocaleTimeString().split(' ')[0],
+    timestamp: Date.now()
+  };
 
-    // 1. Update the array for the graphs
-    setHistory((prev) => {
-        const newHistory = [...prev, dataPoint].slice(-50); // Keep last 50 points
-        return newHistory;
-    });
-
-    // 2. Sync to Firebase (Belgium)
-    // Use the same object so the Viewer sees exactly what you see
+  setHistory(prev => {
+    const updated = [...prev, dataPoint].slice(-50);
+    
+    // Sync the "stable" data to your Firebase Database in Belgium
     set(ref(db, 'live/current'), dataPoint);
+    
+    return updated;
+  });
 }, []);
 
   // 2. FOR THE GUEST: Listen to Firebase updates
@@ -109,6 +108,8 @@ const handleNewData = useCallback((newData) => {
       return () => unsubscribe();
     }
   }, [isViewer]);
+
+  const latestData = history[history.length - 1];
 
   return (
     <div className="mobile-app-wrapper">
@@ -186,7 +187,10 @@ const handleNewData = useCallback((newData) => {
 
       <header className="app-header">
         <div className="logo-area">
-          <h1>Pectus Pro</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+             <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>Pectus Pro</h1>
+             {latestData?.battery && <BatteryStatus battery={latestData.battery} />}
+          </div>
           <span className="status-pill">
            {isViewer 
              ? (history.length > 0 ? 'LIVE FROM CLOUD' : 'WAITING FOR DATA...') 
@@ -205,7 +209,7 @@ const handleNewData = useCallback((newData) => {
         <SensorCard title="Pressure" sensorName="FSR (A2)" data={history} dataKey="pressure" color="#3b82f6" unit="kg" />
         <SensorCard title="Heart Rate" sensorName="MAX30102" data={history} dataKey="hr" color="#f43f5e" unit="bpm" />
         <SensorCard title="SpO2" sensorName="MAX30102" data={history} dataKey="spo2" color="#10b981" unit="%" />
-        <SensorCard title="Magnetic" sensorName="MLX90393" data={history} dataKey="mag" color="#f59e0b" unit="uT" />
+        <SensorCard title="Magnetic" sensorName="MLX90393" data={history} dataKey="magnetic" color="#f59e0b" unit="uT" />
       </div>
     </div>
   );
