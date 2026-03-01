@@ -177,9 +177,11 @@ const DataMonitor = () => {
           <h1>Pectus Pro</h1>
           <div className="status-pill">{isConnected ? '● STREAMING' : '○ OFFLINE'}</div>
         </div>
+        {!isViewer && (
         <button className="btn-action" onClick={isConnected ? disconnect : () => connect(handleNewData)}>
           {isConnected ? 'Disconnect' : 'Connect'}
         </button>
+        )}
       </header>
 
       <div className="sensor-stack">
