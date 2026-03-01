@@ -61,17 +61,24 @@ const DataMonitor = () => {
 
   const isViewer = new URLSearchParams(window.location.search).get('role') === 'viewer';
 
-  // 1. FOR THE OWNER: Upload data to Firebase when received via BLE
-  const handleNewData = useCallback((newData) => {
-    // Local state update
-    setHistory(prev => [...prev, newData].slice(-50));
+const handleNewData = useCallback((newData) => {
+    const dataPoint = {
+        ...newData,
+        // Add a timestamp for the X-axis
+        time: new Date().toLocaleTimeString().split(' ')[0], 
+        timestamp: Date.now()
+    };
 
-    // Upload to Firebase node 'live/current'
-    set(ref(db, 'live/current'), {
-      ...newData,
-      timestamp: Date.now()
+    // 1. Update the array for the graphs
+    setHistory((prev) => {
+        const newHistory = [...prev, dataPoint].slice(-50); // Keep last 50 points
+        return newHistory;
     });
-  }, []);
+
+    // 2. Sync to Firebase (Belgium)
+    // Use the same object so the Viewer sees exactly what you see
+    set(ref(db, 'live/current'), dataPoint);
+}, []);
 
   // 2. FOR THE GUEST: Listen to Firebase updates
   useEffect(() => {
